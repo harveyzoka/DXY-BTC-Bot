@@ -70,7 +70,7 @@ def get_btc_netflow():
     try:
         # Gọi BGeometrics API để lấy Netflow
         # Bạn có thể cần điều chỉnh endpoint chính xác theo tài liệu BGeometrics mới nhất (bitcoin-data.com/api/scalar.html)
-        url = "https://api.bitcoin-data.com/v1/exchange_netflow"
+        url = "https://api.bitcoin-data.com/v1/exchange-netflow-btc"
         headers = {
             "Authorization": f"Bearer {BGEOMETRICS_API_KEY}"
         }
