@@ -10,7 +10,7 @@ load_dotenv()
 # --- CẤU HÌNH ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-CRYPTOQUANT_API_KEY = os.getenv("CRYPTOQUANT_API_KEY")
+BGEOMETRICS_API_KEY = os.getenv("BGEOMETRICS_API_KEY")
 
 # Ngưỡng cảnh báo
 DXY_THRESHOLD = 103.0
@@ -43,8 +43,8 @@ def get_dxy_data():
     """Lấy dữ liệu DXY (US Dollar Index) qua Yahoo Finance (miễn phí)"""
     try:
         import yfinance as yf
-        # Ticker của DXY trên Yahoo Finance là DX=F
-        dxy = yf.Ticker("DX=F")
+        # Ticker của DXY trên Yahoo Finance là DX-Y.NYB
+        dxy = yf.Ticker("DX-Y.NYB")
         # Lấy giá trị đóng cửa gần nhất
         data = dxy.history(period="1d")
         if not data.empty:
@@ -59,37 +59,39 @@ def get_dxy_data():
 
 def get_btc_netflow():
     """
-    Lấy dữ liệu BTC Exchange Netflow từ CryptoQuant API.
+    Lấy dữ liệu BTC Exchange Netflow.
+    Lưu ý: CryptoQuant API không có free tier cho Data API. 
+    Chúng ta dùng BGeometrics làm giải pháp thay thế miễn phí.
     """
-    if not CRYPTOQUANT_API_KEY or CRYPTOQUANT_API_KEY == "your_cryptoquant_api_key_here":
-        print("Cảnh báo: Chưa cấu hình CRYPTOQUANT_API_KEY. Bỏ qua kiểm tra Netflow.")
+    if not BGEOMETRICS_API_KEY or BGEOMETRICS_API_KEY == "your_bgeometrics_api_key_here":
+        print("Cảnh báo: Chưa cấu hình BGEOMETRICS_API_KEY. Bỏ qua kiểm tra Netflow.")
         return None
 
     try:
-        # Gọi CryptoQuant API để lấy Netflow mới nhất
-        url = "https://api.cryptoquant.com/v1/btc/exchange-flows/netflow?limit=1"
+        # Gọi BGeometrics API để lấy Netflow
+        # Bạn có thể cần điều chỉnh endpoint chính xác theo tài liệu BGeometrics mới nhất (bitcoin-data.com/api/scalar.html)
+        url = "https://api.bitcoin-data.com/v1/netflow"
         headers = {
-            "Authorization": f"Bearer {CRYPTOQUANT_API_KEY}"
+            "Authorization": f"Bearer {BGEOMETRICS_API_KEY}"
         }
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         
         data = response.json()
         
-        # CryptoQuant API thường trả về dictionary với key 'result' chứa mảng data
-        result = data.get("result", {}).get("data", [])
-        
-        if result and len(result) > 0:
-            latest_record = result[0]
-            # Tùy thuộc vào cấu trúc trả về, 'netflow' có thể là key trực tiếp
-            netflow_value = float(latest_record.get('netflow', 0))
+        # Xử lý kết quả trả về dựa trên cấu trúc JSON của API.
+        # Giả sử cấu trúc trả về là dạng list có cột value. (cần điều chỉnh tùy API)
+        if data and isinstance(data, list) and len(data) > 0:
+            # Lấy record mới nhất
+            latest_record = data[-1]
+            netflow_value = float(latest_record.get('value', 0))
             return netflow_value
         else:
-            print("Không có dữ liệu Netflow trả về hoặc sai định dạng từ CryptoQuant.")
+            print("Không có dữ liệu Netflow trả về hoặc sai định dạng.")
             return None
             
     except Exception as e:
-        print(f"Lỗi khi lấy dữ liệu BTC Netflow từ CryptoQuant: {e}")
+        print(f"Lỗi khi lấy dữ liệu BTC Netflow: {e}")
         return None
 
 def check_and_alert():
