@@ -1,3 +1,5 @@
 .env
 __pycache__/
 *.pyc
+bot_alert.log
+dxy_state.txt
